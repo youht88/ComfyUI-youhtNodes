@@ -1,0 +1,5 @@
+pandas
+torch
+pillow
+langchain-openai
+modelscope
