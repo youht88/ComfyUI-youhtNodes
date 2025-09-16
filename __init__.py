@@ -1,5 +1,6 @@
 import json
-
+import torch
+import base64
 class ContainsAnyDict(dict):
     def __contains__(self, key):
         return True
@@ -10,8 +11,8 @@ class PyScript:
     """
     CATEGORY = "youht"
     FUNCTION = "generate"
-    RETURN_TYPES = ("STRING","INT","FLOAT","BOOLEAN", "STRING","STRING")
-    RETURN_NAMES = ("字符串","整数","浮点数","布尔值","status","show_help")
+    RETURN_TYPES = ("STRING","INT","FLOAT","BOOLEAN", "IMAGE","STRING","STRING")
+    RETURN_NAMES = ("字符串","整数","浮点数","布尔值","图像","status","show_help")
     OUTPUT_NODE = False
     @classmethod
     def INPUT_TYPES(cls):
@@ -34,6 +35,7 @@ class PyScript:
         obj_int = None
         obj_float = None
         obj_boolean = None
+        obj_image = None
         try:
             if type(obj) == str:
                 obj_string = obj
@@ -82,14 +84,21 @@ class PyScript:
                 obj_string = "true" if obj else "false"
                 obj_int = 1 if obj else 0 
                 obj_float = 1.0 if obj else 0.0
-
+            if type(obj) == torch.Tensor:
+                shape = obj.shape
+                if len(shape)==3:
+                    obj_image = obj.unsqueeze(0)
+                if len(shape)==4:
+                    obj_image = obj
+                if obj_image:
+                    obj_string = json.dumps(obj_image.shape,ensure_ascii=False)
             if type(obj) == tuple:
                 obj_string = json.dumps(list(obj),ensure_ascii=False)
             if type(obj) in [list,dict]:
                 obj_string = json.dumps(obj,ensure_ascii=False)
         except:
             pass
-        return obj_string,obj_int,obj_float,obj_boolean
+        return obj_string,obj_int,obj_float,obj_boolean,obj_image
     def __decode(self,obj):
         if type(obj) == str:
             try:
@@ -107,7 +116,7 @@ class PyScript:
     ):
         show_help=(
         "1. 脚本中可以使用a、b、c、d四个变量，分别对应输入的四个参数,可以是任意类型\n"
-        "2. 脚本中返回结果需要赋值给RESULT变量，系统自动根据结果类型转换为相应的数据格式(数组、字典统一转换为字符串)\n"
+        "2. 脚本中返回结果需要赋值给RESULT变量，系统自动根据结果类型转换为相应的数据格式(数组、字典统一转换为字符串,如果是图像,则输出shape的字符串和原始图像)\n"
         "3. 脚本中可以使用print函数，用于打印日志。\n"
         "4. 脚本中可以使用import语句，导入python标准库或第三方库。\n"
         "5. 脚本中可以使用任何python语法。\n"
@@ -127,12 +136,12 @@ class PyScript:
             }        
             exec(script,globals(),result_dict)
             result = result_dict.get("RESULT", "")
-            result_string,result_int,result_float,result_boolean = self.__encode(result)
+            result_string,result_int,result_float,result_boolean,result_image = self.__encode(result)
             status = f"所有内部变量为{result_dict}"
-            return (result_string,result_int,result_float,result_boolean, status,show_help)
+            return (result_string,result_int,result_float,result_boolean, result_image, status,show_help)
         except Exception as e:
             status = f"执行失败:{e}"
-            return (None,None,None,None, status,show_help)
+            return (None,None,None,None,None, status,show_help)
 
 # 注册到ComfyUI
 NODE_CLASS_MAPPINGS = {
