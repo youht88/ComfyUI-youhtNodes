@@ -92,20 +92,20 @@ class PyScript:
                 if len(shape)==4:
                     obj_image = obj
                 if obj_image:
-                    obj_string = json.dumps(obj_image.shape,ensure_ascii=False)
+                    obj_string = json.dumps(str(obj_image.shape),ensure_ascii=False)
             if type(obj) == dict:
                 if "waveform" in obj and "sample_rate" in obj and type(obj["waveform"]) == torch.Tensor and type(obj["sample_rate"])==int:
                     obj_audio = obj
                     obj_int = obj["sample_rate"]
-                    obj_string = json.dumps(obj["waveform"].shape,ensure_ascii=False)
+                    obj_string = json.dumps(str(obj["waveform"].shape),ensure_ascii=False)
                 else:
                     obj_string = json.dumps(obj,ensure_ascii=False) 
             if type(obj) == tuple:
                 obj_string = json.dumps(list(obj),ensure_ascii=False)
             if type(obj) == list:
                 obj_string = json.dumps(obj,ensure_ascii=False)
-        except:
-            pass
+        except Exception as e:
+            print("ComfyUI-youhtNodes __encode function ERROR:",str(e))
         return obj_string,obj_int,obj_float,obj_boolean,obj_image,obj_audio
     def __decode(self,obj):
         if type(obj) == str:
