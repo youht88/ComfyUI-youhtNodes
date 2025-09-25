@@ -24,7 +24,8 @@ class PyScript:
                 "a": ("*",{"forceInput":False}),
                 "b": ("*",{"forceInput":False}),
                 "c": ("*",{"forceInput":False}),
-                "d": ("*",{"forceInput":False})
+                "d": ("*",{"forceInput":False}),
+                "arg_name": ("STRING",{"multiline": False,"default":"xyz"}),
             }
         }
     @classmethod
@@ -92,20 +93,20 @@ class PyScript:
                 if len(shape)==4:
                     obj_image = obj
                 if obj_image:
-                    obj_string = json.dumps(str(obj_image.shape),ensure_ascii=False)
+                    obj_string = json.dumps(obj_image.shape,ensure_ascii=False)
             if type(obj) == dict:
                 if "waveform" in obj and "sample_rate" in obj and type(obj["waveform"]) == torch.Tensor and type(obj["sample_rate"])==int:
                     obj_audio = obj
                     obj_int = obj["sample_rate"]
-                    obj_string = json.dumps(str(obj["waveform"].shape),ensure_ascii=False)
+                    obj_string = json.dumps(obj["waveform"].shape,ensure_ascii=False)
                 else:
                     obj_string = json.dumps(obj,ensure_ascii=False) 
             if type(obj) == tuple:
                 obj_string = json.dumps(list(obj),ensure_ascii=False)
             if type(obj) == list:
                 obj_string = json.dumps(obj,ensure_ascii=False)
-        except Exception as e:
-            print("ComfyUI-youhtNodes __encode function ERROR:",str(e))
+        except:
+            pass
         return obj_string,obj_int,obj_float,obj_boolean,obj_image,obj_audio
     def __decode(self,obj):
         if type(obj) == str:
@@ -120,7 +121,9 @@ class PyScript:
         b="",
         c="",
         d="",
+        arg_name="",
         script="",
+        **kwargs
     ):
         show_help=(
         "1. 脚本中可以使用a、b、c、d四个变量，分别对应输入的四个参数,可以是任意类型\n"
@@ -131,6 +134,7 @@ class PyScript:
         "6. 如果RESULT是3维或4维torch.Tensor对象，则被认为是图像。输出shape的字符串和原始图像\n"
         "7. 如果RESULT变量是一个包含waveform和sample_rate两个键的字典，且waveform为torch.Tensor类型，sample_rate为int类型,则被认为是音频。输出shape的字符串和音频\n"
         "8. 如果没有结果可能script脚本执行出错了，可以查看stats错误信息。status默认情况下是所有变量值"
+        "9. 可以使用arg_name指定要增加或删除的参数名，然后在script脚本中使用这个参数。增加参数时如果arg_name是预制的参数则忽略，删除时如果arg_name是预制的参数或不存在则忽略"
         "示例:\n"
         "name=a\n"
         "age=b\n"
@@ -144,7 +148,8 @@ class PyScript:
                 "b":self.__decode(b),
                 "c":self.__decode(c),
                 "d":self.__decode(d)
-            }        
+            } 
+            result_dict.update({key:self.__decode(kwargs[key]) for  key in kwargs})  
             exec(script,globals(),result_dict)
             result = result_dict.get("RESULT", "")
             result_string,result_int,result_float,result_boolean,result_image,result_audio = self.__encode(result)
@@ -159,5 +164,5 @@ NODE_CLASS_MAPPINGS = {
     "pyScript": PyScript,
 }
 
-WEB_DIRECTORY = "./js"
+WEB_DIRECTORY = "./web"
 __all__ = ["NODE_CLASS_MAPPINGS", "WEB_DIRECTORY"]
