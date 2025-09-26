@@ -35,6 +35,33 @@ app.registerExtension({
                         if (to_add_index!=-1) return; // already set, do nothing
 		                this.addInput(`${to_add_value}`, this._type, {shape: 7});
 					});
+					this.addWidget("button", "从本地上传py脚本", null, () => {
+						if (!this.inputs) {
+							this.inputs = [];
+						}
+                        const script = this.widgets.find(widget => widget.name === "script")
+                        let fileInput = document.createElement("input");
+                        fileInput.style.display = "none"
+                        fileInput.type = "file";
+                        fileInput.accept = "text/py";
+                        fileInput.click();
+                        fileInput.addEventListener("change", (event) => {
+                            const file = event.target.files[0];
+                            if (file) {
+                                if (!file.name.toLowerCase().endsWith('.py')){
+                                    alert("请上传py脚本文件");
+                                    //app.showNotification("请上传py脚本文件", "warning");
+                                    return;
+                                }
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    const content = e.target.result;
+                                    script["value"]=content;
+                                };
+                                reader.readAsText(file);
+                            }
+                        });
+					});
 				}
 				break;
         }
