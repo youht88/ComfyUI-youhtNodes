@@ -92,8 +92,8 @@ class PyScript:
                     obj_image = obj.unsqueeze(0)
                 if len(shape)==4:
                     obj_image = obj
-                if obj_image:
-                    obj_string = json.dumps(obj_image.shape,ensure_ascii=False)
+                if obj_image!=None:
+                    obj_string = json.dumps(str(obj_image.shape),ensure_ascii=False)
             if type(obj) == dict:
                 if "waveform" in obj and "sample_rate" in obj and type(obj["waveform"]) == torch.Tensor and type(obj["sample_rate"])==int:
                     obj_audio = obj
@@ -105,7 +105,8 @@ class PyScript:
                 obj_string = json.dumps(list(obj),ensure_ascii=False)
             if type(obj) == list:
                 obj_string = json.dumps(obj,ensure_ascii=False)
-        except:
+        except Exception as e:
+            print(f"encode error: {e}")
             pass
         return obj_string,obj_int,obj_float,obj_boolean,obj_image,obj_audio
     def __decode(self,obj):
